@@ -79,6 +79,7 @@ const TRUCKS=[
   {p:'DKLZ-55',a:'GRDP-50',c:'EDUARDO ROMERO'},{p:'DRBX-48',a:'JH-2097',c:'MANUEL ARAYA'},
   {p:'FFZZ-14',a:'HXGJ18',c:'ALEX FREDES'},{p:'FPZY-84',a:'KHDP79',c:'GABRIEL URZUA'},
   {p:'HZGZ-51',a:'KYLY-48',c:'HERNAN LIZAMA'},{p:'LCPX-53',a:'JN-3232',c:'FRANCISCO VARGAS'},
+  {p:'GWKV-11',a:'HXDF-23',c:'MIGUEL ARRIAGADA'},{p:'RVTZ-27',a:'JN-1324',c:'PEDRO'},
 ];
 const RT=[
   {cl:'CORPESCA',or:'IQUIQUE',de:'CORONEL',t:4676000,k:2300,c:1809300},
@@ -751,7 +752,7 @@ const REGION_NAMES={
 };
 
 // Camiones fijos arrendados en Coronel
-const FIJOS_CORONEL=['BLPK-47','JKZB-51','DKLZ-55','DRBX-48'];
+const FIJOS_CORONEL=['GWKV-11','RVTZ-27'];
 
 // ── DISPONIBILIDAD ──
 function Disponibilidad({tramos}){
@@ -763,21 +764,24 @@ function Disponibilidad({tramos}){
       if(!t.patente)return;
       if(!map[t.patente]){
         const truck=TRUCKS.find(x=>x.p===t.patente);
-        if(!truck)return; // ignorar patentes no registradas
+        if(!truck)return;
+        // Usar destino real del último tramo
+        const destino=t.destino||'Sin registro';
         map[t.patente]={
           patente:t.patente,
           conductor:truck.c,
           acoplado:truck.a||'',
-          destino:t.destino||'Sin registro',
+          destino,
           fecha:t.fecha_carga||'',
-          region:getRegion(t.destino),
+          region:getRegion(destino),
           fijo:false,
         };
       }
     });
-    // Camiones sin tramos
+    // Camiones sin ningún tramo registrado
     TRUCKS.forEach(t=>{
       if(!map[t.p]){
+        // Si es fijo arrendado en Coronel, mostrar ahí
         const esFijo=FIJOS_CORONEL.includes(t.p);
         map[t.p]={
           patente:t.p,conductor:t.c,acoplado:t.a||'',
@@ -787,10 +791,7 @@ function Disponibilidad({tramos}){
           fijo:esFijo,
         };
       }
-    });
-    // Forzar fijos a Coronel siempre
-    FIJOS_CORONEL.forEach(p=>{
-      if(map[p]){map[p].destino='CORONEL';map[p].region=getRegion('CORONEL');map[p].fijo=true;}
+      // NO forzar fijos con tramos - respetar su último destino real
     });
     return Object.values(map);
   },[tramos]);
