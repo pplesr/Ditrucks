@@ -798,15 +798,19 @@ function Disponibilidad({tramos}){
   const porRegion=useMemo(()=>{
     const m={};
     disponibles.forEach(d=>{
-      const reg=REGION_NAMES[d.region]||d.region;
-      if(!m[reg])m[reg]=[];
-      m[reg].push(d);
+      const regKey=REGION_NAMES[d.region]||d.region;
+      if(!m[regKey])m[regKey]=[];
+      m[regKey].push(d);
     });
     return m;
   },[disponibles]);
 
-  // Ordenar regiones por nombre
-  const regionOrder=Object.values(REGION_NAMES).concat(['Sin destino registrado','Otra región']);
+  const regionOrder=[
+    'Tarapacá','Parinacota / Arica','Antofagasta','Atacama','Coquimbo',
+    'Valparaíso','Metropolitana',"O'Higgins",'Maule','Maule Sur',
+    'Ñuble Norte','Ñuble','Biobío','Araucanía','Los Lagos Norte',
+    'Los Lagos','Los Lagos Sur / Chiloé','Sin destino registrado','Otra región'
+  ];
 
   return e('div',{style:{maxWidth:640,margin:'0 auto',paddingBottom:48}},
     e('div',{style:{marginBottom:16,padding:'10px 14px',background:'#e0f7fa',borderRadius:10,fontSize:'.85rem',color:'#006064'}},
@@ -828,7 +832,7 @@ function Disponibilidad({tramos}){
               d.destino==='Sin registro'
                 ?e('span',{style:{fontSize:'.72rem',background:'#f1f5f9',color:'#94a3b8',padding:'1px 6px',borderRadius:4}},'Sin actividad')
                 :e('span',{style:{fontSize:'.75rem',background:'#d1fae5',color:'#065f46',padding:'1px 6px',borderRadius:4}},'✅ '+d.destino),
-              d.fijo&&e('span',{style:{fontSize:'.7rem',background:'#dbeafe',color:'#1e40af',padding:'1px 6px',borderRadius:4,fontWeight:600}},'📌 Arrendado')
+
             ),
             e('div',{style:{fontSize:'.77rem',color:'#64748b',marginTop:2}},'👤 '+d.conductor+(d.acoplado?' · 🔗 '+d.acoplado:''))
           ),
