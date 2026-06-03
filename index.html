@@ -604,15 +604,26 @@ function ListaTramos({user,isOwner}){
       e('button',{onClick:exportExcel,style:{padding:'.7rem 1rem',background:'#16a34a',color:'white',border:'none',borderRadius:10,fontWeight:600,cursor:'pointer',whiteSpace:'nowrap',fontSize:'.88rem',fontFamily:'Geist,sans-serif'}},'📥 Excel'),
       isOwner&&e('button',{onClick:async()=>{
         if(!confirm('¿Recalcular km vacíos de TODOS los tramos? Esto puede tomar unos segundos.'))return;
-        // Cargar todos los tramos
+        // Cargar TODOS los tramos sin límite
         const todos=await api.get();
+        console.log('Total tramos para recalcular:',todos.length);
         // Agrupar por patente
         const porPat={};
-        todos.forEach(t=>{if(!porPat[t.patente])porPat[t.patente]=[];porPat[t.patente].push(t);});
+        todos.forEach(t=>{
+          if(!t.patente)return;
+          if(!porPat[t.patente])porPat[t.patente]=[];
+          porPat[t.patente].push(t);
+        });
         let actualizados=0;
         for(const pat of Object.keys(porPat)){
-          // Ordenar cronológicamente
-          const tramosOrden=porPat[pat].sort((a,b)=>(a.fecha_carga||'').localeCompare(b.fecha_carga||'')||a.created_at-b.created_at);
+          // Ordenar cronológicamente por fecha_carga y luego created_at
+          const tramosOrden=porPat[pat].sort((a,b)=>{
+            const fa=a.fecha_carga||'';
+            const fb=b.fecha_carga||'';
+            if(fa!==fb)return fa.localeCompare(fb);
+            return (a.created_at||0)-(b.created_at||0);
+          });
+          console.log(pat,'tramos:',tramosOrden.map(t=>t.fecha_carga+' '+t.origen+'->'+t.destino));
           for(let i=0;i<tramosOrden.length;i++){
             const t=tramosOrden[i];
             const prev=i>0?tramosOrden[i-1]:null;
@@ -620,12 +631,10 @@ function ListaTramos({user,isOwner}){
             if(prev&&prev.destino&&t.origen&&prev.destino!==t.origen){
               const v=kmV(prev.destino,t.origen);
               nuevoKm=v.km;nuevoCosto=v.costo;nuevaCiudad=prev.destino;
+              console.log(pat,'tramo',i,':',prev.destino,'->',t.origen,'=',nuevoKm,'km');
             }
-            // Solo actualizar si cambió
-            if(nuevoKm!==(t.km_vacio||0)||nuevoCosto!==(t.costo_vacio||0)||nuevaCiudad!==(t.ciudad_vacio_desde||'')){
-              await api.patch(t.id,{km_vacio:nuevoKm,costo_vacio:nuevoCosto,ciudad_vacio_desde:nuevaCiudad});
-              actualizados++;
-            }
+            await api.patch(t.id,{km_vacio:nuevoKm,costo_vacio:nuevoCosto,ciudad_vacio_desde:nuevaCiudad});
+            actualizados++;
           }
         }
         alert('✅ Recálculo completado. '+actualizados+' tramos actualizados.');
